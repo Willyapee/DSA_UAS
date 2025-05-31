@@ -1,0 +1,20 @@
+Pepperoni Pizza#95000
+Meat Lovers Pizza#105000
+Cheese Lovers Pizza#90000
+Super Supreme Pizza#110000
+BBQ Chicken Pizza#100000
+Tuna Melt Pizza#98000
+Veggie Lovers Pizza#87000
+Spaghetti Bolognese#75000
+Fettuccine Alfredo#78000
+Mac & Cheese#72000
+Chicken Wings (6 pcs)#50000
+Garlic Bread#35000
+French Fries#30000
+Mozzarella Sticks#45000
+Chocolate Lava Cake#55000
+Soft Drink#15000
+Mineral Water#10000
+Chocolate Brownie#60000
+Chicken Popcorn#55000
+Ice Cream Sundae#25000
