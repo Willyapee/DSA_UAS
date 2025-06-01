@@ -656,7 +656,7 @@ void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
     
     while(1){
         clearScreen();
-        printf("====================================\n");
+        printf("\n====================================\n");
         printf("\tPizza Hut Delivery\n");
         printf("====================================");
 

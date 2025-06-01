@@ -708,7 +708,7 @@ void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
 
 void showHistory() {
     clearScreen();
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery\n");
     printf("====================================\n");
 
