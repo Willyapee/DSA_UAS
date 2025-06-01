@@ -464,7 +464,7 @@ void searchFood(MenuItem *menuHead) {
     ArrayMenuItem menuArray[20];
     
     clearScreen();
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
     

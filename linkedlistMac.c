@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
+//#include <conio.h>
 
 void clearScreen(){
     #ifdef _WIN32
@@ -464,7 +464,7 @@ void searchFood(MenuItem *menuHead) {
     ArrayMenuItem menuArray[20];
     
     clearScreen();
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
     
@@ -476,7 +476,7 @@ void searchFood(MenuItem *menuHead) {
         printf("%d. %s (Rp %d)\n", i+1, menuArray[i].name, menuArray[i].price);
     }
     
-    printf("\nEnter food keyword: "); getcharar(); scanf("%[^\n]", keyword); 
+    printf("\nEnter food keyword: "); getchar(); scanf("%[^\n]", keyword); 
     
     searchResult = binarySearch(menuArray, count, keyword);
     printf("\nSearch Results for %s:\n", keyword);
@@ -904,7 +904,7 @@ void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
                 showCart(*orderRoot);
 
                 printf("Add more food? (y/n): "); 
-                getcharar();
+                getchar();
                 scanf("%c", &isContinue);   
             }         
             
