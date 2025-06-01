@@ -381,14 +381,22 @@ void navigateMenu(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
     showMenu(*currentItem);
 }
 
-void addFoodToOrder(OrderItem **orderRoot, MenuItem *menuHead){
+void addFoodToOrder(OrderItem **orderRoot, MenuItem *currentDisplayItem, int displayMode, MenuItem *menuHead, MenuItem *sortedMenuHead){
     int itemNumber;
     printf("Enter food number: ");
     scanf("%d", &itemNumber);
     
-    MenuItem *menuItem = menuHead;
-    while(menuItem != NULL && menuItem->index != itemNumber) {
-        menuItem = menuItem->next;
+    MenuItem *menuItem = NULL;
+     if (displayMode == 0) {
+        menuItem = menuHead;
+        while(menuItem != NULL && menuItem->index != itemNumber) {
+            menuItem = menuItem->next;
+        }
+    } else if (displayMode == 1) {
+        menuItem = sortedMenuHead;
+        while(menuItem != NULL && menuItem->index != itemNumber) {
+            menuItem = menuItem->next;
+        }
     }
 
     if(menuItem == NULL || itemNumber < 1 || itemNumber > 20) {
@@ -567,49 +575,188 @@ void showHistory() {
     getch();
 }
 
-void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail, OrderItem **orderRoot, int *orderCount, int *itemIndex){
+void swap(MenuItem* a, MenuItem* b) {
+    int tempPrice = a->price, tempIndex = a->index;
+    char tempName[100];
+    strcpy(tempName, a->name);
+
+    a->price = b->price;
+    strcpy(a->name, b->name);
+    a->index = b->index;
+
+    b->price = tempPrice;
+    strcpy(b->name, tempName);
+    b->index = tempIndex;
+}
+
+MenuItem *getNodeAt(MenuItem* head, int index) {
+    int i = 0;
+    while (head != NULL && i < index) {
+        head = head->next;
+        i++;
+    }
+    return head;
+}
+
+MenuItem *duplicateMenu(MenuItem *menuHead) {
+    if (menuHead == NULL) {
+        return NULL;
+    }
+
+    MenuItem *newHead = NULL, *newTail = NULL;
+    
+    while(menuHead != NULL) {
+        MenuItem *newNode = createMenuItem(menuHead->name, menuHead->price, menuHead->index);
+        if (newHead == NULL) {
+            newHead = newTail = newNode;
+        } else {
+            newTail->next = newNode;
+            newNode->prev = newTail;
+            newTail = newNode;
+        }
+        menuHead = menuHead->next;
+    }
+
+    return newHead;
+}
+
+MenuItem *bubbleSortMenuByPrice(MenuItem *sortedMenuHead, int n){
+    int sorted = 0, i = 1, j;
+    while(!sorted) {
+        sorted = 1;
+        for(j = n-1;j >= i;j--){
+            MenuItem *item1 = getNodeAt(sortedMenuHead, j-1);
+            MenuItem *item2 = getNodeAt(sortedMenuHead, j);
+            if(item1 != NULL && item2 != NULL && item1->price > item2->price){
+                swap(item1, item2);
+                sorted = 0;
+            }
+        }
+        i++;
+    }
+    return sortedMenuHead;
+}
+
+MenuItem *selectionSortMenuByPrice(MenuItem *head) {
+    if (head == NULL || head->next == NULL) {
+        return head;
+    }
+
+    MenuItem *current = head;
+    
+    while (current != NULL) {
+        MenuItem *max = current;
+        MenuItem *temp = current->next;
+
+        while (temp != NULL) {
+            if (temp->price > max->price) {
+                max = temp;
+            }
+            temp = temp->next;
+        }
+
+        if (max != current) {
+            swap(current, max);
+        }
+        
+        current = current->next;
+    }
+    
+    return head;
+}
+
+void updateIndex(MenuItem **head) {
+    MenuItem *current = *head;
+    int idx = 1;
+    while (current != NULL) {
+        current->index = idx++;
+        current = current->next;
+    }
+}
+
+void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail, OrderItem **orderRoot, int *orderCount, int *itemIndex, int *displayMode, MenuItem **currentSortedItem, MenuItem **sortedMenuHead, MenuItem **sortedMenuTail) {
     int choice = 0;
     
-    while(choice != 7){
+    while(1){
         char isContinue = 'Y';
         clearScreen();
-        showMenu(*currentItem);
+        
+        if(*displayMode == 0) {
+            showMenu(*currentItem);
+        } else if(*displayMode == 1) {
+            showMenu(*currentSortedItem ? *currentSortedItem : *sortedMenuHead);
+        }
         showCart(*orderRoot);
 
         printf("\n1. Next menu page\n");
         printf("2. Prev menu page\n");
-        printf("3. Order Food\n");
-        printf("4. Search Food\n");
-        printf("5. Remove Order\n");
-        printf("6. Complete order\n");
-        printf("7. Back to menu\n");
+        printf("3. Show default menu page\n");
+        printf("4. Sort by Price (Ascending)\n");
+        printf("5. Sort by Price (Descending)\n");
+        printf("6. Order Food\n");
+        printf("7. Search Food\n");
+        printf("8. Remove Order\n");
+        printf("9. Complete order\n");
+        printf("10. Back to menu\n");
         printf("Choose: ");
         scanf("%d", &choice);
         
         if(choice == 1 || choice == 2) {
-            navigateMenu(currentItem, menuHead, menuTail, choice);
+            if(*displayMode == 0){
+                navigateMenu(currentItem, menuHead, menuTail, choice);
+            } else {
+                navigateMenu(currentSortedItem, *sortedMenuHead, *sortedMenuTail, choice);
+            }
 
-        } else if (choice == 3) {
+        } else if(choice == 3){
+            *displayMode = 0;
+            *currentItem = menuHead;
+
+        } else if(choice == 4 || choice == 5){
+            if(*sortedMenuHead != NULL) {
+                freeMenu(sortedMenuHead); 
+                *sortedMenuHead = NULL;
+                *sortedMenuTail = NULL;
+            }
+            
+            *sortedMenuHead = duplicateMenu(menuHead);
+
+            if(choice == 4){
+                *sortedMenuHead = bubbleSortMenuByPrice(*sortedMenuHead, 20);
+            } else{
+                *sortedMenuHead = selectionSortMenuByPrice(*sortedMenuHead);
+            }
+
+            *sortedMenuTail = *sortedMenuHead;
+            if(*sortedMenuTail != NULL) {
+                while((*sortedMenuTail)->next != NULL) {
+                    *sortedMenuTail = (*sortedMenuTail)->next;
+                }
+            }
+            updateIndex(sortedMenuHead);
+            *displayMode = 1;
+            *currentSortedItem = *sortedMenuHead;
+            
+        } else if (choice == 6) {
             while(isContinue == 'Y' || isContinue == 'y'){
-                addFoodToOrder(orderRoot, menuHead);  
+                addFoodToOrder(orderRoot, (*displayMode == 0) ? *currentItem : *currentSortedItem, *displayMode, menuHead, *sortedMenuHead); 
                 showCart(*orderRoot);
 
                 printf("Add more food? (y/n): "); 
                 getchar();
                 scanf("%c", &isContinue);   
-            }
-                
+            }         
             
-        } else if (choice == 4) {
+        } else if (choice == 7) {
             searchFood(menuHead);
 
-        } else if (choice == 5) {
+        } else if (choice == 8) {
             modifyOrder(orderRoot, itemIndex);
 
-        } else if (choice == 6) {
+        } else if (choice == 9) {
             checkout(orderRoot, orderCount, itemIndex);
 
-        } else if (choice == 7) {
+        } else if (choice == 10) {
             break;
 
         }
@@ -623,33 +770,79 @@ int main(){
 
     OrderItem *orderRoot = NULL;
     MenuItem *menuHead = NULL, *menuTail = NULL;
+    MenuItem *sortedMenuHead = NULL, *sortedMenuTail = NULL, *currentSortedItem = NULL;
+
     loadMenu(&menuHead, &menuTail);
 
     MenuItem *currentItem = menuHead;
-    int choice = 0, orderCount = 1, itemIndex = 1;
-    
+
+    int choice = 0, orderCount = 1, itemIndex = 1, displayMode = 0;
+
     while(1){
-        showMenu(currentItem);
+        if(displayMode == 0) {
+            showMenu(currentItem);
+        } else if(displayMode == 1) {
+            showMenu(currentSortedItem ? currentSortedItem : sortedMenuHead);
+        }
+        
         printf("\n1. Next menu page\n");
         printf("2. Prev menu page\n");
-        printf("3. Order\n");
-        printf("4. Order History\n");
-        printf("5. Exit\n");
+        printf("3. Show default menu page\n");
+        printf("4. Sort by Price (Ascending)\n");
+        printf("5. Sort by Price (Descending)\n");
+        printf("6. Order\n");
+        printf("7. Order History\n");
+        printf("8. Exit\n");
         printf("Choose: ");
         scanf("%d", &choice);
 
         if(choice == 1 || choice == 2){
-            navigateMenu(&currentItem, menuHead, menuTail, choice);
+            if(displayMode == 0){
+                navigateMenu(&currentItem, menuHead, menuTail, choice);
+            } else {
+                navigateMenu(&currentSortedItem, sortedMenuHead, sortedMenuTail, choice);
+            }
 
         } else if(choice == 3){
-            processOrder(&currentItem, menuHead, menuTail, &orderRoot, &orderCount, &itemIndex);
+            displayMode = 0;
+            currentItem = menuHead;
+
+        } else if(choice == 4 || choice == 5){
+            if(sortedMenuHead != NULL) {
+                freeMenu(&sortedMenuHead);
+                sortedMenuTail = NULL;
+                currentSortedItem = NULL;
+            }
+            
+            sortedMenuHead = duplicateMenu(menuHead);
         
-        } else if(choice == 4){
+            if(choice == 4){
+                sortedMenuHead = bubbleSortMenuByPrice(sortedMenuHead, 20);
+            } else{
+                sortedMenuHead = selectionSortMenuByPrice(sortedMenuHead);
+            }
+
+            sortedMenuTail = sortedMenuHead;
+            if(sortedMenuTail != NULL) {
+                while(sortedMenuTail->next != NULL) {
+                    sortedMenuTail = sortedMenuTail->next;
+                }
+            }
+            updateIndex(&sortedMenuHead);
+
+            displayMode = 1;
+            currentSortedItem = sortedMenuHead;
+
+        } else if(choice == 6){
+            processOrder(&currentItem, menuHead, menuTail, &orderRoot, &orderCount, &itemIndex, &displayMode, &currentSortedItem, &sortedMenuHead, &sortedMenuTail);
+            
+        } else if(choice == 7){
             showHistory();
 
-        } else if(choice == 5){ 
+        } else if(choice == 8){ 
             freeMenu(&menuHead);
             freeOrder(&orderRoot);
+            freeMenu(&sortedMenuHead);
             break;
         }
     }
