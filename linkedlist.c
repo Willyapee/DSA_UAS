@@ -30,6 +30,11 @@ typedef struct {
     int price;
 } ArrayMenuItem;
 
+typedef struct {
+    char name[100];
+    int price;
+} HeapOrderItem;
+
 void freeMenu(MenuItem **menuHead){
     while(*menuHead != NULL) {
         MenuItem *temp = *menuHead;
@@ -46,6 +51,12 @@ void freeOrder(OrderItem **orderRoot){
     freeOrder(&(*orderRoot)->right);
     free(*orderRoot);
     *orderRoot = NULL;
+}
+
+void freeAllMemory(MenuItem **menuHead, MenuItem **sortedMenuHead, OrderItem **orderRoot) {
+    freeMenu(menuHead);
+    freeMenu(sortedMenuHead);
+    freeOrder(orderRoot);
 }
 
 OrderItem* insertOrderToBST(OrderItem *root, OrderItem *newOrder){
@@ -192,45 +203,42 @@ void deleteOrderItem(OrderItem **root, int targetIndex, int *currentIndex) {
         return;
     }
 
-    OrderItem *currentOrderItem = searchOrderItem(*root, targetIndex);
+OrderItem *currentOrderItem = searchOrderItem(*root, targetIndex);
     if (currentOrderItem == NULL) {
         printf("\nItem not found (Press any key to continue)");
         getch();
         return;
     }
 
-    char deletedName[100];
-    strcpy(deletedName, currentOrderItem->name);
-
-    OrderItem *parent = parentSearch(*root, currentOrderItem);
-
     if (currentOrderItem->left == NULL && currentOrderItem->right == NULL) {
-        if (parent == NULL) {
+        if (currentOrderItem == *root) {
             free(*root);
             *root = NULL;
-
-        } else if (parent->left == currentOrderItem) {
-            free(parent->left);
-            parent->left = NULL;
-
         } else {
-            free(parent->right);
-            parent->right = NULL;
+            OrderItem *parent = parentSearch(*root, currentOrderItem);
+            if (parent->left == currentOrderItem) {
+                free(parent->left);
+                parent->left = NULL;
+            } else {
+                free(parent->right);
+                parent->right = NULL;
+            }
         }
+
     } else if (currentOrderItem->left == NULL || currentOrderItem->right == NULL) {
         OrderItem *child = (currentOrderItem->left != NULL) ? currentOrderItem->left : currentOrderItem->right;
-        
-        if (parent == NULL) {
+        if (currentOrderItem == *root) {
             free(*root);
             *root = child;
-
-        } else if (parent->left == currentOrderItem) {
-            free(parent->left);
-            parent->left = child;
-
         } else {
-            free(parent->right);
-            parent->right = child;
+            OrderItem *parent = parentSearch(*root, currentOrderItem);
+            if (parent->left == currentOrderItem) {
+                free(parent->left);
+                parent->left = child;
+            } else {
+                free(parent->right);
+                parent->right = child;
+            }
         }
 
     } else {
@@ -238,7 +246,7 @@ void deleteOrderItem(OrderItem **root, int targetIndex, int *currentIndex) {
         strcpy(currentOrderItem->name, predecessor->name);
         currentOrderItem->price = predecessor->price;
 
-        int predIndex = 1;
+        int predecessorIndex = 1;
         OrderItem *temp = *root;
         OrderItem *stack[100];
         int top = -1;
@@ -248,20 +256,17 @@ void deleteOrderItem(OrderItem **root, int targetIndex, int *currentIndex) {
                 stack[++top] = temp;
                 temp = temp->left;
             }
-            
             temp = stack[top--];
-            
             if (temp == predecessor) break;
-            
-            predIndex++;
+            predecessorIndex++;
             temp = temp->right;
         }
 
-        deleteOrderItem(root, predIndex, currentIndex);
+        deleteOrderItem(root, predecessorIndex, currentIndex);
         return;
     }
 
-    printf("\n%s has been removed successfully (Press any key to continue)", deletedName);
+    printf("\n%s has been removed successfully (Press any key to continue)", currentOrderItem->name);
     getch();
 }
 
@@ -301,6 +306,8 @@ void loadMenu(MenuItem **menuHead, MenuItem **menuTail){
     FILE *menuFile = fopen("menu.txt", "r");
     if (!menuFile) {
         printf("Cannot open menu.txt\n");
+        freeMenu(menuHead);  
+        *menuHead = NULL; 
         return;
     }
 
@@ -540,69 +547,162 @@ void modifyOrder(OrderItem **orderRoot, int *itemIndex){
     }
 }
 
-void calculateTotal(OrderItem *node, int *total){
-    if (node == NULL) return;
-    calculateTotal(node->left, total);
-    *total += node->price;
-    calculateTotal(node->right, total);
+
+void writeHeapToFile(HeapOrderItem heapItem[], int heapSize, FILE *file) {
+    for (int i = 0; i < heapSize; i++) {
+        fprintf(file, "%d. %s - Rp %d\n", i + 1, heapItem[i].name, heapItem[i].price);
+    }
 }
 
-void writeOrderToFile(OrderItem *node, FILE *file, int *currentIndex){
-    if (node == NULL) return;
-    writeOrderToFile(node->left, file, currentIndex);
-    fprintf(file, "%d. %s (Rp %d)\n", (*currentIndex)++, node->name, node->price);
-    writeOrderToFile(node->right, file, currentIndex);
+void swapOrder(HeapOrderItem *a, HeapOrderItem *b) {
+    HeapOrderItem temp = *a;
+    *a = *b;
+    *b = temp;
 }
+
+void minheapify(HeapOrderItem heapItem[], int i, int n){
+    int lowest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+    if(left < n && heapItem[left].price < heapItem[lowest].price){
+        lowest = left;
+    }
+    if(right < n && heapItem[right].price < heapItem[lowest].price){
+        lowest = right;
+    }
+    if(lowest != i){
+        swapOrder(&heapItem[i], &heapItem[lowest]);
+        minheapify(heapItem, lowest, n);
+    }
+}
+
+void buildMinHeap(HeapOrderItem heapItem[], int n) {
+    for (int i = n / 2 - 1; i >= 0; i--) {  
+        minheapify(heapItem, i, n);
+    }
+}
+
+void convertBSTToArray(OrderItem *orderRoot, HeapOrderItem heapItem[], int *index) {
+    if(orderRoot == NULL) return;
+    convertBSTToArray(orderRoot->left, heapItem, index);
+    
+    strcpy(heapItem[*index].name, orderRoot->name);
+    heapItem[*index].price = orderRoot->price;
+    (*index)++;
+    
+    convertBSTToArray(orderRoot->right, heapItem, index);
+}
+
+void showMinHeap(HeapOrderItem heapItem[], int heapSize) {
+    printf("\nYour Cart (Sorted by Price - Min Heap):\n");
+    printf("========================================\n");
+    for (int i = 0; i < heapSize; i++) {
+        printf("%d. %s - Rp %d\n", i + 1, heapItem[i].name, heapItem[i].price);
+    }
+    printf("========================================\n");
+}
+
+int calculateHeapTotal(HeapOrderItem heapItem[], int heapSize) {
+    int total = 0;
+    for (int i = 0; i < heapSize; i++) {
+        total += heapItem[i].price;
+    }
+    return total;
+}
+void removeMinHeap(HeapOrderItem heapItem[], int *heapSize) {
+    if (*heapSize == 0) return;
+
+    HeapOrderItem last = heapItem[*heapSize - 1];
+    (*heapSize)--;
+
+    int ptr = 0;
+    int left = 1;
+    int right = 2;
+    heapItem[ptr] = last;
+
+    while (left < *heapSize) {
+        int smallest = ptr;
+
+        if (heapItem[left].price < heapItem[smallest].price)
+            smallest = left;
+
+        if (right < *heapSize && heapItem[right].price < heapItem[smallest].price)
+            smallest = right;
+
+        if (smallest == ptr) break;
+
+        swapOrder(&heapItem[ptr], &heapItem[smallest]);
+
+        ptr = smallest;
+        left = 2 * ptr + 1;
+        right = 2 * ptr + 2;
+    }
+}
+
 
 void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
-    int total = 0, choice;
-    OrderItem *current = *orderRoot;
-    
     if(*orderRoot == NULL){
         printf("\nCart is empty (Press any key to continue)");
         getch();
         return;
     }
 
-    clearScreen();
-    printf("====================================\n");
-    printf("\tPizza Hut Delivery\n");
-    printf("====================================");
-    showCart(*orderRoot);
+    int total = 0, choice, heapSize = 0;
+    OrderItem *current = *orderRoot;
+    HeapOrderItem heapItem[100];
+    
+    convertBSTToArray(*orderRoot, heapItem, &heapSize);
+    buildMinHeap(heapItem, heapSize);
+    
+    while(1){
+        clearScreen();
+        printf("====================================\n");
+        printf("\tPizza Hut Delivery\n");
+        printf("====================================");
 
-    calculateTotal(*orderRoot, &total);
+        showMinHeap(heapItem, heapSize);
+        total = calculateHeapTotal(heapItem, heapSize);
 
-    printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-    printf("\tTotal price : Rp %d\n", total);
-    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-    printf("1. Checkout\n");
-    printf("2. Cancel payment\n");
-    printf("\nChoose: ");
-    scanf("%d", &choice);
+        printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("\tTotal price : Rp %d\n", total);
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("1. Checkout\n");
+        printf("2. Remove last item from order\n");
+        printf("3. Cancel payment\n");
+        printf("\nChoose: ");
+        scanf("%d", &choice);
 
-    if(choice == 1){
-        printf("\nThank You for Ordering at Pizza Hut Delivery! (Press any key to continue)");
+        if(choice == 1){
+            printf("\nThank You for Ordering at Pizza Hut Delivery! (Press any key to continue)");
 
-        FILE *historyFile = fopen("history.txt", "a");
-        if(historyFile == NULL) {
-            printf("Failed to write history.txt (Press any key to continue)");
-        } else { 
-            fprintf(historyFile, "Order number %d\n", *orderCount);
-            int fileIndex = 1;
-            writeOrderToFile(*orderRoot, historyFile, &fileIndex);
-            fprintf(historyFile, "Total : Rp %d\n", total);
-            fprintf(historyFile, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-            (*orderCount)++;
-            *itemIndex = 1;
-            freeOrder(orderRoot);
-            *orderRoot = NULL;
+            FILE *historyFile = fopen("history.txt", "a");
+            if(historyFile == NULL) {
+                printf("Failed to write history.txt (Press any key to continue)");
+            } else { 
+                fprintf(historyFile, "Order number %d\n", *orderCount);
+                writeHeapToFile(heapItem, heapSize, historyFile);
+                fprintf(historyFile, "Total : Rp %d\n", total);
+                fprintf(historyFile, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                (*orderCount)++;
+                *itemIndex = 1;
+                freeOrder(orderRoot);
+                *orderRoot = NULL;
+            }
+            fclose(historyFile);
+            getch();
+            return;
+
+        } else if (choice == 2){
+            printf("Removing item: %s - Rp %d\n", heapItem[0].name, heapItem[0].price);
+            total -= heapItem[0].price; 
+            removeMinHeap(heapItem, &heapSize);
+            printf("Item removed! (Press any key to continue)");
+            getch();
+
+        } else if (choice == 3){
+            return;
+
         }
-        fclose(historyFile);
-        getch();
-
-    } else if (choice == 2){
-        return;
-
     }
 }
 
@@ -636,7 +736,7 @@ void showHistory() {
     getch();
 }
 
-void swap(MenuItem* a, MenuItem* b) {
+void swapMenu(MenuItem* a, MenuItem* b) {
     int tempPrice = a->price, tempIndex = a->index;
     char tempName[100];
     strcpy(tempName, a->name);
@@ -689,7 +789,7 @@ MenuItem *bubbleSortMenuByPrice(MenuItem *sortedMenuHead, int n){
             MenuItem *item1 = getNodeAt(sortedMenuHead, j-1);
             MenuItem *item2 = getNodeAt(sortedMenuHead, j);
             if(item1 != NULL && item2 != NULL && item1->price > item2->price){
-                swap(item1, item2);
+                swapMenu(item1, item2);
                 sorted = 0;
             }
         }
@@ -717,7 +817,7 @@ MenuItem *selectionSortMenuByPrice(MenuItem *head) {
         }
 
         if (max != current) {
-            swap(current, max);
+            swapMenu(current, max);
         }
         
         current = current->next;
@@ -813,7 +913,7 @@ void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
 
         } else if (choice == 8) {
             modifyOrder(orderRoot, itemIndex);
-
+            
         } else if (choice == 9) {
             checkout(orderRoot, orderCount, itemIndex);
 
@@ -871,6 +971,7 @@ int main(){
         } else if(choice == 4 || choice == 5){
             if(sortedMenuHead != NULL) {
                 freeMenu(&sortedMenuHead);
+                sortedMenuHead = NULL;
                 sortedMenuTail = NULL;
                 currentSortedItem = NULL;
             }
@@ -901,9 +1002,7 @@ int main(){
             showHistory();
 
         } else if(choice == 8){ 
-            freeMenu(&menuHead);
-            freeOrder(&orderRoot);
-            freeMenu(&sortedMenuHead);
+            freeAllMemory(&menuHead, &sortedMenuHead, &orderRoot);
             break;
         }
     }
