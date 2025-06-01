@@ -24,6 +24,12 @@ typedef struct OrderItem {
     struct OrderItem *left, *right;
 } OrderItem;
 
+typedef struct {
+    int index;
+    char name[100];
+    int price;
+} ArrayMenuItem;
+
 void freeMenu(MenuItem **menuHead){
     while(*menuHead != NULL) {
         MenuItem *temp = *menuHead;
@@ -42,7 +48,6 @@ void freeOrder(OrderItem **orderRoot){
     *orderRoot = NULL;
 }
 
-//Memasukkan node baru ke dalam binary search tree
 OrderItem* insertOrderToBST(OrderItem *root, OrderItem *newOrder){
     if (root == NULL) return newOrder;
 
@@ -409,36 +414,92 @@ void addFoodToOrder(OrderItem **orderRoot, MenuItem *currentDisplayItem, int dis
     *orderRoot = insertOrderToBST(*orderRoot, newOrder);
 }
 
+void sortMenuByName(ArrayMenuItem *menuArray, int count) {
+    for(int i = 0; i < count - 1; i++) {
+        for(int j = 0; j < count-i-1; j++) {
+            if(strcmp(menuArray[j].name, menuArray[j+1].name) > 0) {
+                ArrayMenuItem temp = menuArray[j];
+                menuArray[j] = menuArray[j+1];
+                menuArray[j+1] = temp;
+            }
+        }
+    }
+}
+
+void convertMenuToArray(MenuItem *menuHead, ArrayMenuItem *menuArray, int *count){
+    MenuItem *current = menuHead;
+    *count = 0;
+    while(current != NULL && *count < 20) {
+        strcpy(menuArray[*count].name, current->name);
+        menuArray[*count].index = current->index;
+        menuArray[*count].price = current->price;
+        (*count)++;
+        current = current->next;
+    }
+}
+
+int binarySearch(ArrayMenuItem *menuArray, int count, char *searchKey) {
+    int mid, low, high;
+    low = 0;
+    high = count-1;
+    while (low <= high) {
+        mid = (low + high) / 2;
+        if (strstr(menuArray[mid].name, searchKey) != NULL) return mid;
+        if (strcmp(searchKey, menuArray[mid].name) < 0) high = mid - 1;
+        else low = mid + 1;
+    }
+    return -1;
+}
+
 void searchFood(MenuItem *menuHead) {
     char keyword[100];
-    int found = 0;
+    int found = 0, count, searchResult;
+    ArrayMenuItem menuArray[20];
     
     clearScreen();
     printf("====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
     
-    printf("Enter food keyword: ");
-    getchar();
-    scanf("%[^\n]", keyword); 
+    convertMenuToArray(menuHead, menuArray, &count);
+    sortMenuByName(menuArray, count);
     
-    printf("\nSearch Results for %s:\n", keyword);
-    printf("------------------------------------\n");
-    
-    while(menuHead != NULL) {
-        char menuName[100];
-        strcpy(menuName, menuHead->name);
-        
-        char *pos = strstr(menuName, keyword);
-        if(pos != NULL) {
-            printf("%d. %s (Rp %d)\n", menuHead->index, menuHead->name, menuHead->price);
-            found = 1;
-        }
-        menuHead = menuHead->next;
+    printf("Sorted Menu List (For Debugging Purpose)\n");
+    for(int i = 0;i<count;i++){
+        printf("%d. %s (Rp %d)\n", i+1, menuArray[i].name, menuArray[i].price);
     }
     
-    if(!found) {
-        printf("No items containing %s", keyword);
+    printf("\nEnter food keyword: "); getchar(); scanf("%[^\n]", keyword); 
+    
+    searchResult = binarySearch(menuArray, count, keyword);
+    printf("\nSearch Results for %s:\n", keyword);
+    printf("------------------------------------\n");
+
+    if (searchResult != -1) {
+        printf("\n%d. %s (Rp %d)\n", menuArray[searchResult].index, menuArray[searchResult].name, menuArray[searchResult].price);
+        found = 1;
+
+        int left = searchResult - 1;
+        while (left >= 0 && strstr(menuArray[left].name, keyword) != NULL) {
+            printf("%d. %s (Rp %d)\n", 
+                   menuArray[left].index,
+                   menuArray[left].name,
+                   menuArray[left].price);
+            left--;
+        }
+        
+        int right = searchResult + 1;
+        while (right < count && strstr(menuArray[right].name, keyword) != NULL) {
+            printf("%d. %s (Rp %d)\n", 
+                   menuArray[right].index,
+                   menuArray[right].name,
+                   menuArray[right].price);
+            right++;
+        }
+    } 
+    
+    if (!found){
+        printf("No item containing %s", keyword);
     }
     
     printf("\nPress any key to continue...");
