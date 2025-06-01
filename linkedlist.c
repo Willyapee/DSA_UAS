@@ -464,7 +464,7 @@ void searchFood(MenuItem *menuHead) {
     ArrayMenuItem menuArray[20];
     
     clearScreen();
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
     
@@ -708,7 +708,7 @@ void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
 
 void showHistory() {
     clearScreen();
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery\n");
     printf("====================================\n");
 
