@@ -463,7 +463,7 @@ void searchFood(MenuItem *menuHead) {
     int found = 0, count, searchResult;
     ArrayMenuItem menuArray[20];
     
-    clearScreen();
+    //clearScreen();
     printf("\n====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
@@ -479,6 +479,7 @@ void searchFood(MenuItem *menuHead) {
     printf("\nEnter food keyword: "); getchar(); scanf("%[^\n]", keyword); 
     
     searchResult = binarySearch(menuArray, count, keyword);
+    clearScreen();
     printf("\nSearch Results for %s:\n", keyword);
     printf("------------------------------------\n");
 
@@ -655,7 +656,7 @@ void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
     buildMinHeap(heapItem, heapSize);
     
     while(1){
-        clearScreen();
+        //clearScreen();
         printf("\n====================================\n");
         printf("\tPizza Hut Delivery\n");
         printf("====================================");
@@ -840,7 +841,7 @@ void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
     
     while(1){
         char isContinue = 'Y';
-        clearScreen();
+        //clearScreen();
         
         if(*displayMode == 0) {
             showMenu(*currentItem);
