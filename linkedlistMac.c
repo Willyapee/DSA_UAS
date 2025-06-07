@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <conio.h>
+//#include <conio.h>
 
 void clearScreen(){
     #ifdef _WIN32
@@ -463,8 +463,8 @@ void searchFood(MenuItem *menuHead) {
     int found = 0, count, searchResult;
     ArrayMenuItem menuArray[20];
     
-    clearScreen();
-    printf("====================================\n");
+    //clearScreen();
+    printf("\n====================================\n");
     printf("\tPizza Hut Delivery - Search\n");
     printf("====================================\n");
     
@@ -476,9 +476,10 @@ void searchFood(MenuItem *menuHead) {
         printf("%d. %s (Rp %d)\n", i+1, menuArray[i].name, menuArray[i].price);
     }
     
-    printf("\nEnter food keyword: "); getcharar(); scanf("%[^\n]", keyword); 
+    printf("\nEnter food keyword: "); getchar(); scanf("%[^\n]", keyword); 
     
     searchResult = binarySearch(menuArray, count, keyword);
+    clearScreen();
     printf("\nSearch Results for %s:\n", keyword);
     printf("------------------------------------\n");
 
@@ -655,8 +656,8 @@ void checkout(OrderItem **orderRoot, int *orderCount, int *itemIndex){
     buildMinHeap(heapItem, heapSize);
     
     while(1){
-        clearScreen();
-        printf("====================================\n");
+        //clearScreen();
+        printf("\n====================================\n");
         printf("\tPizza Hut Delivery\n");
         printf("====================================");
 
@@ -840,7 +841,7 @@ void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
     
     while(1){
         char isContinue = 'Y';
-        clearScreen();
+        //clearScreen();
         
         if(*displayMode == 0) {
             showMenu(*currentItem);
@@ -904,7 +905,7 @@ void processOrder(MenuItem **currentItem, MenuItem *menuHead, MenuItem *menuTail
                 showCart(*orderRoot);
 
                 printf("Add more food? (y/n): "); 
-                getcharar();
+                getchar();
                 scanf("%c", &isContinue);   
             }         
             
