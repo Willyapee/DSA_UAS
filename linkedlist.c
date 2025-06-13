@@ -209,6 +209,8 @@ OrderItem *currentOrderItem = searchOrderItem(*root, targetIndex);
         getch();
         return;
     }
+    
+    printf("\n%s has been removed successfully (Press any key to continue)", currentOrderItem->name);
 
     if (currentOrderItem->left == NULL && currentOrderItem->right == NULL) {
         if (currentOrderItem == *root) {
@@ -266,7 +268,6 @@ OrderItem *currentOrderItem = searchOrderItem(*root, targetIndex);
         return;
     }
 
-    printf("\n%s has been removed successfully (Press any key to continue)", currentOrderItem->name);
     getch();
 }
 
